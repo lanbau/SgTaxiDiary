@@ -2,6 +2,7 @@
 
 Real-time Singapore taxi availability map. Shows live taxi positions, your location, nearby taxi count, and a personal booking log that builds up a success-rate history over time.
 
+<img width="1089" height="884" alt="Screenshot 2026-05-16 at 7 26 19 PM" src="https://github.com/user-attachments/assets/45b28b12-e87e-42bc-9358-3c2512437d9d" />
 
 ---
 
