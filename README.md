@@ -1,4 +1,4 @@
-# 🚕 SG Taxi Tracker
+# 🚕 SG Taxi Diary
 
 Real-time Singapore taxi availability map. Shows live taxi positions, your location, nearby taxi count, and a personal booking log that builds up a success-rate history over time.
 
