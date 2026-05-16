@@ -1,0 +1,130 @@
+# ============================================================
+# Kubernetes manifests for SG Taxi Tracker
+# Deploy to AWS EKS or any K8s cluster
+# ============================================================
+
+# --- Backend Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grabmap-backend
+  labels:
+    app: grabmap-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grabmap-backend
+  template:
+    metadata:
+      labels:
+        app: grabmap-backend
+    spec:
+      containers:
+        - name: backend
+          image: YOUR_ECR_URI/grabmap-backend:latest
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+
+---
+# --- Backend Service (ClusterIP — internal only) ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grabmap-backend
+spec:
+  selector:
+    app: grabmap-backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+
+---
+# --- Frontend Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grabmap-frontend
+  labels:
+    app: grabmap-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grabmap-frontend
+  template:
+    metadata:
+      labels:
+        app: grabmap-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: YOUR_ECR_URI/grabmap-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+
+---
+# --- Frontend Service (LoadBalancer — public) ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grabmap-frontend
+  annotations:
+    # AWS-specific: provision an Application Load Balancer
+    service.beta.kubernetes.io/aws-load-balancer-type: "alb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: grabmap-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+---
+# --- Horizontal Pod Autoscaler for backend ---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: grabmap-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: grabmap-backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
